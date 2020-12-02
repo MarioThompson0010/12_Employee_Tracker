@@ -67,8 +67,10 @@ function addToTable() {
                     userAddsDepartment();
                     break;
                 case "ROLE":
+                    userAddsRole();
                     break;
                 case "EMPLOYEE":
+                    userAddsEmployee();
                     break;
                 default:
                     break;
@@ -99,4 +101,155 @@ function userAddsDepartment() {
                 }
             );
         });
+}
+
+function userAddsRole() {
+
+    connection.query(myqueries.addRole.getDeptCode, (err, results) => {
+        if (err) throw err;
+        //let deptChosen = 0;
+        inquirer
+            .prompt([
+                {
+                    name: "userAddsRole",
+                    type: "input",
+                    message: "Type the title you would like to add, then press Enter."
+                },
+                {
+                    name: "userAddsSalary",
+                    type: "input",
+                    message: "Type the salary you would like to attach to this role, then press Enter.",
+                    validate: (value) => {
+                        if (isNaN(value) === false) {
+                            return true;
+                        }
+                        return false;
+                    }
+                },
+                {
+                    name: "userAddsDepartment",
+                    type: "list",
+                    choices: () => {
+                        var choiceArray = [];
+                        for (var i = 0; i < results.length; i++) {
+                            choiceArray.push(results[i].name);
+                        }
+                        return choiceArray;
+                    },
+                    message: "What department would you like to put the role in?"
+                }
+            ])
+            .then((answer) => {
+
+                const deptChosen = results.find(dept => dept.name === answer.userAddsDepartment);
+                connection.query(
+                    myqueries.addRole.role,
+                    {
+                        title: answer.userAddsRole,
+                        salary: answer.userAddsSalary,
+                        department_id: deptChosen.id
+                    },
+                    (err) => {
+                        if (err) throw err;
+
+                        console.log("Role was successfully added!");
+                        start();
+                    }
+                );
+            });
+    })
+
+}
+
+
+function userAddsEmployee() {
+
+    connection.query(myqueries.addEmp.role, (err, results) => {
+        if (err) throw err;
+        const roles = results;
+        let managers = null;
+
+        connection.query(myqueries.addEmp.manager, (err2, results2) => {
+            if (err2) throw err2;
+
+            managers = results2;
+
+
+            inquirer
+                .prompt([
+                    {
+                        name: "userAddsFirstName",
+                        type: "input",
+                        message: "Type the first name, then press Enter."
+                    },
+                    {
+                        name: "userAddsLastName",
+                        type: "input",
+                        message: "Type the last name, then press Enter."
+                    },
+                    {
+                        name: "userAddsRole",
+                        type: "list",
+                        choices: () => {
+                            let choiceArray = [];
+                            for (var i = 0; i < results.length; i++) {
+                                choiceArray.push(`${results[i].id.toString().padStart(3, '0')} ${results[i].title}`);
+                            }
+                            return choiceArray;
+                        },
+                        message: "What role would you like this employee to play?"
+                    },
+                    {
+                        name: "userAddsManager",
+                        type: "list",
+                        choices: () => {
+                            let choiceArray = [];
+                            // let employeeObject = {
+                            //     id: 0,
+                            //     name: ""
+                            // };
+                            managers.forEach(element => {
+                                // employeeObject.id = element.id;
+                                // employeeObject.name = element.first_name + " " + element.last_name;
+                                //managers.push(employeeObject);
+
+                                choiceArray.push(`${element.id.toString().padStart(3, '0')} ${element.first_name} ${element.last_name}`);
+                            });
+                            // for (var i = 0; i < results.length; i++) {
+                            //     choiceArray.push(results[i].title);
+                            // }
+                            choiceArray.push("000 No manager");
+                            return choiceArray;
+                        },
+                        message: "Who is the manager for this employee? Leave blank if this employee has no manager."
+                    }
+                ])
+                .then((answer) => {
+
+                    const roleid = answer.userAddsRole.substring(0, 3);
+                    const managerid = answer.userAddsManager.substring(0, 3);
+                    //const deptChosen = results.find(dept => dept.name === answer.userAddsDepartment);
+                    connection.query(
+                        myqueries.addEmp.insert,
+                        {
+                            first_name: answer.userAddsFirstName,
+                            last_name: answer.userAddsLastName,
+                            role_id: roleid,
+                            manager_id: managerid === "000" ? null : managerid
+                        },
+                        (err) => {
+                            if (err) throw err;
+
+                            console.log("Employee was successfully added!");
+                            start();
+                        }
+                    );
+                });
+
+        });
+
+
+        const dum = 0;
+    })
+
 }
