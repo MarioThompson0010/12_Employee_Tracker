@@ -1,6 +1,7 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
 var myqueries = require('./sqlqueries'); //
+var consoleOutputter = require("console.table");
 
 // create the connection information for the sql database
 var connection = mysql.createConnection({
@@ -39,6 +40,7 @@ function start() {
                     addToTable(); //call add
                     break;
                 case "VIEW": // view
+                    viewTable();
                     break;
                 case "UPDATE": // update
                     break;
@@ -107,7 +109,6 @@ function userAddsRole() {
 
     connection.query(myqueries.addRole.getDeptCode, (err, results) => {
         if (err) throw err;
-        //let deptChosen = 0;
         inquirer
             .prompt([
                 {
@@ -166,15 +167,13 @@ function userAddsEmployee() {
 
     connection.query(myqueries.addEmp.role, (err, results) => {
         if (err) throw err;
-        const roles = results;
+        //const roles = results;
         let managers = null;
 
         connection.query(myqueries.addEmp.manager, (err2, results2) => {
             if (err2) throw err2;
 
             managers = results2;
-
-
             inquirer
                 .prompt([
                     {
@@ -204,20 +203,10 @@ function userAddsEmployee() {
                         type: "list",
                         choices: () => {
                             let choiceArray = [];
-                            // let employeeObject = {
-                            //     id: 0,
-                            //     name: ""
-                            // };
                             managers.forEach(element => {
-                                // employeeObject.id = element.id;
-                                // employeeObject.name = element.first_name + " " + element.last_name;
-                                //managers.push(employeeObject);
-
                                 choiceArray.push(`${element.id.toString().padStart(3, '0')} ${element.first_name} ${element.last_name}`);
                             });
-                            // for (var i = 0; i < results.length; i++) {
-                            //     choiceArray.push(results[i].title);
-                            // }
+
                             choiceArray.push("000 No manager");
                             return choiceArray;
                         },
@@ -228,7 +217,6 @@ function userAddsEmployee() {
 
                     const roleid = answer.userAddsRole.substring(0, 3);
                     const managerid = answer.userAddsManager.substring(0, 3);
-                    //const deptChosen = results.find(dept => dept.name === answer.userAddsDepartment);
                     connection.query(
                         myqueries.addEmp.insert,
                         {
@@ -253,3 +241,50 @@ function userAddsEmployee() {
     })
 
 }
+
+function viewTable() {
+
+    inquirer
+        .prompt([{
+            name: "whatToView",
+            type: "list",
+            choices: ["DEPARTMENT", "ROLE", "EMPLOYEE"],
+            message: "Select a table to view, then press Enter"
+
+        }])
+        .then((answer) => {
+            switch (answer.whatToView) {
+                case "DEPARTMENT":
+                    break;
+                case "ROLE":
+                    break;
+                case "EMPLOYEE":
+                    viewEmployee();
+                    break;
+                default:
+                    break;
+            }
+        });
+
+   
+}
+
+function viewEmployee()
+{
+    connection.query(myqueries.viewAllEmployees.all, (err, results) => {
+        if (err) throw err;
+        const gotTable = consoleOutputter.getTable(results);
+        console.log(gotTable);
+        start();
+    });
+}
+
+// function viewEmployee()
+// {
+    // connection.query(myqueries.viewAllEmployees.all, (err, results) => {
+        // if (err) throw err;
+        // const gotTable = consoleOutputter.getTable(results);
+        // console.log(gotTable);
+        // start();
+    // });
+// }
