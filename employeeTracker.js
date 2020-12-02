@@ -89,7 +89,7 @@ function userAddsDepartment() {
             connection.query(
                 myqueries.addDepartment.dept,
                 {
-                    name: answer.whichTableToAddTo
+                    name: answer.userAddsDept
                 },
                 (err) => {
                     if (err) throw err;
