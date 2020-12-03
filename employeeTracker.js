@@ -309,7 +309,7 @@ function updateEmployee() {
                 choices: () => {
                     let choiceArray = [];
                     results.forEach((element) => {
-                        choiceArray.push(`ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name}, ${element.Last_Name}, ${element.Title}, Salary: ${element.Salary}, Department:${element.Department} Manager: ${element.Manager_Name}`);
+                        choiceArray.push(`ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name} ${element.Last_Name}, Title:${element.Title}, Salary:${element.Salary}, Department:${element.Department}, Manager:${element.Manager_Name}`);
                     });
 
                     return choiceArray;

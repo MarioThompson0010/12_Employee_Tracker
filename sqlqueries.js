@@ -37,18 +37,18 @@ const thequeries = {
             ORDER BY emp.id
         `
     },
-    viewAllDepts : {
-        all: 
-        `
+    viewAllDepts: {
+        all:
+            `
             SELECT dp.id as 'ID',
             dp.name as 'Department'
             FROM department dp
             ORDER BY dp.id
         `
     },
-    viewAllRoles : {
-        all: 
-        `
+    viewAllRoles: {
+        all:
+            `
             SELECT rl.id as 'ID', 
             rl.title as 'Title',
             rl.salary as 'Salary',
@@ -59,35 +59,35 @@ const thequeries = {
             ORDER BY rl.id
         `
     },
-    updateRoleTitle : {
+    updateRoleTitle: {
         update: `
         
             UPDATE role rl
 
             INNER JOIN employee emp ON
             emp.role_id = rl.id
-            INNER JOIN department dp ON
-            rl.department_id = dp.id
 
             SET rl.title = ?  
             WHERE emp.id = ? 
         
         `
     },
-   updateRoleSalary : {
-    update: `
+    updateRoleSalary: {
+        update: `
                 
             UPDATE role rl
 
             INNER JOIN employee emp ON
             emp.role_id = rl.id
-            INNER JOIN department dp ON
-            rl.department_id = dp.id
-
+            
             SET rl.salary = ?  
             WHERE emp.id = ? 
 `
     },
+
+    // INNER JOIN department dp ON
+    //         rl.department_id = dp.id
+
     updateRoleDepartment: {
         update: `
         
@@ -106,7 +106,7 @@ const thequeries = {
     }
 }
 
-            // rl.title = 'dude'
-            // emp.id = 2
+// rl.title = 'dude'
+// emp.id = 2
 
 module.exports = thequeries;
