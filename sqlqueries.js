@@ -84,10 +84,6 @@ const thequeries = {
             WHERE emp.id = ? 
 `
     },
-
-    // INNER JOIN department dp ON
-    //         rl.department_id = dp.id
-
     updateRoleDepartment: {
         update: `
         
@@ -102,6 +98,13 @@ const thequeries = {
 
             WHERE emp.id = ?
 
+        `
+    },
+    updateEmployeeRole: {
+        update: `
+            UPDATE employee emp
+            SET emp.role_id = ?
+            WHERE emp.id = ?
         `
     }
 }

@@ -2,7 +2,7 @@ var mysql = require("mysql");
 var inquirer = require("inquirer");
 var myqueries = require('./sqlqueries'); //
 var consoleOutputter = require("console.table");
-const { viewAllRoles } = require("./sqlqueries");
+//const { viewAllRoles } = require("./sqlqueries");
 
 // create the connection information for the sql database
 var connection = mysql.createConnection({
@@ -46,7 +46,7 @@ function start() {
                 case "UPDATE": // update
                     updateEmployee();
                     break;
-                default: 
+                default:
                     connection.end();
                     break;
             }
@@ -157,15 +157,12 @@ function userAddsRole() {
                 );
             });
     })
-
 }
-
 
 function userAddsEmployee() {
 
     connection.query(myqueries.addEmp.role, (err, results) => {
         if (err) throw err;
-        //const roles = results;
         let managers = null;
 
         connection.query(myqueries.addEmp.manager, (err2, results2) => {
@@ -233,11 +230,7 @@ function userAddsEmployee() {
                 });
 
         });
-
-
-        const dum = 0;
     })
-
 }
 
 function viewTable() {
@@ -262,12 +255,10 @@ function viewTable() {
                     viewEmployee();
                     break;
                 default:
-                   console.log("Error in table chosen. Add a table");
+                    console.log("Error in table chosen. Add a table");
                     break;
             }
         });
-
-
 }
 
 function viewDepartments() {
@@ -301,128 +292,55 @@ function updateEmployee() {
 
     connection.query(myqueries.viewAllEmployees.all, (err, results) => {
         if (err) throw err;
-
-        inquirer
-            .prompt([{
-                name: "updateEmp",
-                type: "rawlist",
-                choices: () => {
-                    let choiceArray = [];
-                    results.forEach((element) => {
-                        choiceArray.push(`ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name} ${element.Last_Name}, Title:${element.Title}, Salary:${element.Salary}, Department:${element.Department}, Manager:${element.Manager_Name}`);
-                    });
-
-                    return choiceArray;
-                },
-                message: "Please choose which employee's role you would like to update"
-
-            }])
-            .then((gotEmp) => {
-                inquirer
-                    .prompt([
-                        {
-                            name: "updateRole",
-                            type: "list",
-                            choices: ["Title", "Salary", "Department"],
-                            message: "Which property would you like to change?"
-                        }
-                    ])
-                    .then((gotProperty) => {
-                        const gotTitle = () => {
-                            inquirer
-                                .prompt([{
-                                    name: "changeTitle",
-                                    type: "input",
-                                    message: "Please type in the new title"
-                                }])
-                                .then((gotValue) => {
-
-                                    connection.query(myqueries.updateRoleTitle.update,
-                                        [
-                                            gotValue.changeTitle, gotEmp.updateEmp.substring(3, 6)
-                                        ],
-                                        (err) => {
-                                            if (err) throw err;
-                                            console.log("Successful update!")
-                                            start();
-                                        });
-                                });
-                        }
-
-                        switch (gotProperty.updateRole) {
-                            case "Title":
-                                gotTitle();
-                                break;
-                            case "Salary":
-                                gotSalary(gotEmp);
-                                break;
-                            case "Department":
-                                gotDepartment(gotEmp);
-                                break;
-                            default:
-                                console.log("Error occurred: add a field to the role table");
-                                break;
-
-                        }
-                    });
-            });
-    });
-}
-
-const gotSalary = (gotEmp) => {
-    inquirer
-        .prompt([{
-            name: "changeSalary",
-            type: "input",
-            message: "Please type in the new salary"
-        }])
-        .then((gotValue) => {
-
-            connection.query(myqueries.updateRoleSalary.update,
-                [
-                    gotValue.changeSalary, gotEmp.updateEmp.substring(3, 6)
-                ],
-                (err) => {
-                    if (err) throw err;
-                    console.log("Successful update of salary!")
-                    start();
-                });
-        });
-}
-
-const gotDepartment = (gotEmp) => {
-
-    connection.query(myqueries.viewAllDepts.all,
-        (err, results) => {
+        connection.query(myqueries.viewAllRoles.all, (err, resultsRoles) => {
             if (err) throw err;
             inquirer
                 .prompt([{
-                    name: "newDept",
-                    type: "list",
+                    name: "updateEmp",
+                    type: "rawlist",
                     choices: () => {
-                        let choices = [];
-                        results.forEach((elem) => {
-                            choices.push(`${elem.ID.toString().padStart(3, '0')} ${elem.Department}`);
+                        let choiceArray = [];
+                        results.forEach((element) => {
+                            choiceArray.push(`ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name} ${element.Last_Name}, Title:${element.Title}, Salary:${element.Salary}, Department:${element.Department}, Manager:${element.Manager_Name}`);
                         });
 
-                        return choices;
+                        return choiceArray;
                     },
-                    message: "Please select which department you would like to change to."
+                    message: "Please choose which employee's role you would like to update"
+
                 }])
-                .then((answer) => {
-                    const newdept = answer.newDept.substring(0, 3);
-                    const theEmp = gotEmp.updateEmp.substring(3, 6);
+                .then((gotEmp) => {
+                    inquirer
+                        .prompt([
+                            {
+                                name: "updateRole",
+                                type: "list",
+                                choices: () => {
+                                    let choiceArray = [];
 
-                    connection.query(myqueries.updateRoleDepartment.update,
-                        [
-                            newdept, theEmp
-                        ],
-                        (err) => {
-                            if (err) throw err;
+                                    for (let i = 0; i < resultsRoles.length; i++) {
+                                        choiceArray.push(`ID:${resultsRoles[i].ID.toString().padStart(3, '0')}, Title:${resultsRoles[i].Title}, Salary:${resultsRoles[i].Salary}, Dept:${resultsRoles[i].Department}`);
+                                    }
 
-                            console.log("Employee's role successfully updated");
-                            start();
+                                    return choiceArray;
+                                },
+                                message: "Which role would you like to attach to the employee instead?"
+                            }
+                        ])
+                        .then((gotProperty) => {
+                            const roleId = gotProperty.updateRole.substring(3, 6);
+                            const empid = gotEmp.updateEmp.substring(3, 6);
+                            connection.query(myqueries.updateEmployeeRole.update,
+                                [
+                                    roleId, empid
+                                ],
+                                (err, resultsUpdate) => {
+                                    if (err) throw err;
+                                    console.log("Successfully updated employee's role");
+                                    start();
+                                });
                         });
                 });
         });
+    });
 }
