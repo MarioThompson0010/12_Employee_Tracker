@@ -2,6 +2,7 @@ var mysql = require("mysql");
 var inquirer = require("inquirer");
 var myqueries = require('./sqlqueries'); //
 var consoleOutputter = require("console.table");
+const { viewAllRoles } = require("./sqlqueries");
 
 // create the connection information for the sql database
 var connection = mysql.createConnection({
@@ -31,8 +32,8 @@ function start() {
         .prompt([{
             name: "actionToPerform",
             type: "list",
-            message: "What would you like to do--[ADD], [VIEW], or [UPDATE]--a table?",
-            choices: ["ADD", "VIEW", "UPDATE"]
+            message: "What would you like to do--[ADD], [VIEW], or [UPDATE]--a table? Select EXIT to end",
+            choices: ["ADD", "VIEW", "UPDATE", "EXIT"]
         }])
         .then((answer) => {
             switch (answer.actionToPerform) {
@@ -43,15 +44,12 @@ function start() {
                     viewTable();
                     break;
                 case "UPDATE": // update
+                    updateEmployee();
                     break;
-                default: console.log("Error in action to perform");
+                default: 
+                    connection.end();
                     break;
             }
-
-            if (answer.actionToPerform === "ADD") {
-                // call ADD
-            }
-
         });
 }
 
@@ -131,7 +129,7 @@ function userAddsRole() {
                     name: "userAddsDepartment",
                     type: "list",
                     choices: () => {
-                        var choiceArray = [];
+                        let choiceArray = [];
                         for (var i = 0; i < results.length; i++) {
                             choiceArray.push(results[i].name);
                         }
@@ -255,22 +253,42 @@ function viewTable() {
         .then((answer) => {
             switch (answer.whatToView) {
                 case "DEPARTMENT":
+                    viewDepartments();
                     break;
                 case "ROLE":
+                    viewRole();
                     break;
                 case "EMPLOYEE":
                     viewEmployee();
                     break;
                 default:
+                   console.log("Error in table chosen. Add a table");
                     break;
             }
         });
 
-   
+
 }
 
-function viewEmployee()
-{
+function viewDepartments() {
+    connection.query(myqueries.viewAllDepts.all, (err, results) => {
+        if (err) throw err;
+        const gotTable = consoleOutputter.getTable(results);
+        console.log(gotTable);
+        start();
+    });
+}
+
+function viewRole() {
+    connection.query(myqueries.viewAllRoles.all, (err, results) => {
+        if (err) throw err;
+        const gotTable = consoleOutputter.getTable(results);
+        console.log(gotTable);
+        start();
+    });
+}
+
+function viewEmployee() {
     connection.query(myqueries.viewAllEmployees.all, (err, results) => {
         if (err) throw err;
         const gotTable = consoleOutputter.getTable(results);
@@ -279,12 +297,132 @@ function viewEmployee()
     });
 }
 
-// function viewEmployee()
-// {
-    // connection.query(myqueries.viewAllEmployees.all, (err, results) => {
-        // if (err) throw err;
-        // const gotTable = consoleOutputter.getTable(results);
-        // console.log(gotTable);
-        // start();
-    // });
-// }
+function updateEmployee() {
+
+    connection.query(myqueries.viewAllEmployees.all, (err, results) => {
+        if (err) throw err;
+
+        inquirer
+            .prompt([{
+                name: "updateEmp",
+                type: "rawlist",
+                choices: () => {
+                    let choiceArray = [];
+                    results.forEach((element) => {
+                        choiceArray.push(`ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name}, ${element.Last_Name}, ${element.Title}, Salary: ${element.Salary}, Department:${element.Department} Manager: ${element.Manager_Name}`);
+                    });
+
+                    return choiceArray;
+                },
+                message: "Please choose which employee's role you would like to update"
+
+            }])
+            .then((gotEmp) => {
+                inquirer
+                    .prompt([
+                        {
+                            name: "updateRole",
+                            type: "list",
+                            choices: ["Title", "Salary", "Department"],
+                            message: "Which property would you like to change?"
+                        }
+                    ])
+                    .then((gotProperty) => {
+                        const gotTitle = () => {
+                            inquirer
+                                .prompt([{
+                                    name: "changeTitle",
+                                    type: "input",
+                                    message: "Please type in the new title"
+                                }])
+                                .then((gotValue) => {
+
+                                    connection.query(myqueries.updateRoleTitle.update,
+                                        [
+                                            gotValue.changeTitle, gotEmp.updateEmp.substring(3, 6)
+                                        ],
+                                        (err) => {
+                                            if (err) throw err;
+                                            console.log("Successful update!")
+                                            start();
+                                        });
+                                });
+                        }
+
+                        switch (gotProperty.updateRole) {
+                            case "Title":
+                                gotTitle();
+                                break;
+                            case "Salary":
+                                gotSalary(gotEmp);
+                                break;
+                            case "Department":
+                                gotDepartment(gotEmp);
+                                break;
+                            default:
+                                console.log("Error occurred: add a field to the role table");
+                                break;
+
+                        }
+                    });
+            });
+    });
+}
+
+const gotSalary = (gotEmp) => {
+    inquirer
+        .prompt([{
+            name: "changeSalary",
+            type: "input",
+            message: "Please type in the new salary"
+        }])
+        .then((gotValue) => {
+
+            connection.query(myqueries.updateRoleSalary.update,
+                [
+                    gotValue.changeSalary, gotEmp.updateEmp.substring(3, 6)
+                ],
+                (err) => {
+                    if (err) throw err;
+                    console.log("Successful update of salary!")
+                    start();
+                });
+        });
+}
+
+const gotDepartment = (gotEmp) => {
+
+    connection.query(myqueries.viewAllDepts.all,
+        (err, results) => {
+            if (err) throw err;
+            inquirer
+                .prompt([{
+                    name: "newDept",
+                    type: "list",
+                    choices: () => {
+                        let choices = [];
+                        results.forEach((elem) => {
+                            choices.push(`${elem.ID.toString().padStart(3, '0')} ${elem.Department}`);
+                        });
+
+                        return choices;
+                    },
+                    message: "Please select which department you would like to change to."
+                }])
+                .then((answer) => {
+                    const newdept = answer.newDept.substring(0, 3);
+                    const theEmp = gotEmp.updateEmp.substring(3, 6);
+
+                    connection.query(myqueries.updateRoleDepartment.update,
+                        [
+                            newdept, theEmp
+                        ],
+                        (err) => {
+                            if (err) throw err;
+
+                            console.log("Employee's role successfully updated");
+                            start();
+                        });
+                });
+        });
+}
