@@ -2,7 +2,6 @@ var mysql = require("mysql");
 var inquirer = require("inquirer");
 var myqueries = require('./sqlqueries'); //
 var consoleOutputter = require("console.table");
-//const { viewAllRoles } = require("./sqlqueries");
 
 // create the connection information for the sql database
 var connection = mysql.createConnection({

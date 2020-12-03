@@ -59,47 +59,6 @@ const thequeries = {
             ORDER BY rl.id
         `
     },
-    updateRoleTitle: {
-        update: `
-        
-            UPDATE role rl
-
-            INNER JOIN employee emp ON
-            emp.role_id = rl.id
-
-            SET rl.title = ?  
-            WHERE emp.id = ? 
-        
-        `
-    },
-    updateRoleSalary: {
-        update: `
-                
-            UPDATE role rl
-
-            INNER JOIN employee emp ON
-            emp.role_id = rl.id
-            
-            SET rl.salary = ?  
-            WHERE emp.id = ? 
-`
-    },
-    updateRoleDepartment: {
-        update: `
-        
-            UPDATE role rl
-
-            INNER JOIN employee emp ON
-            emp.role_id = rl.id
-            INNER JOIN department dp ON
-            rl.department_id = dp.id
-
-            SET rl.department_id = ?
-
-            WHERE emp.id = ?
-
-        `
-    },
     updateEmployeeRole: {
         update: `
             UPDATE employee emp
@@ -108,8 +67,5 @@ const thequeries = {
         `
     }
 }
-
-// rl.title = 'dude'
-// emp.id = 2
 
 module.exports = thequeries;
