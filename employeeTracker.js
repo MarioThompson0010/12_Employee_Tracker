@@ -194,17 +194,18 @@ function userAddsEmployee() {
                     },
                     {
                         name: "userAddsManager",
-                        type: "list",
+                        type: "rawlist",
                         choices: () => {
                             let choiceArray = [];
+                            choiceArray.push("000 No manager");
+
                             managers.forEach(element => {
                                 choiceArray.push(`${element.id.toString().padStart(3, '0')} ${element.first_name} ${element.last_name}`);
                             });
 
-                            choiceArray.push("000 No manager");
                             return choiceArray;
                         },
-                        message: "Who is the manager for this employee? Leave blank if this employee has no manager."
+                        message: "Who is the manager for this employee? Select zero if this employee has no manager."
                     }
                 ])
                 .then((answer) => {
@@ -227,7 +228,6 @@ function userAddsEmployee() {
                         }
                     );
                 });
-
         });
     })
 }
@@ -240,7 +240,6 @@ function viewTable() {
             type: "list",
             choices: ["DEPARTMENT", "ROLE", "EMPLOYEE"],
             message: "Select a table to view, then press Enter"
-
         }])
         .then((answer) => {
             switch (answer.whatToView) {
@@ -298,48 +297,173 @@ function updateEmployee() {
                     name: "updateEmp",
                     type: "rawlist",
                     choices: () => {
-                        let choiceArray = [];
-                        results.forEach((element) => {
-                            choiceArray.push(`ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name} ${element.Last_Name}, Title:${element.Title}, Salary:${element.Salary}, Department:${element.Department}, Manager:${element.Manager_Name}`);
-                        });
-
-                        return choiceArray;
+                        return utilityReturnEmpChoice(results);
                     },
-                    message: "Please choose which employee's role you would like to update"
+                    message: "Which employee would you like to update?"
 
                 }])
                 .then((gotEmp) => {
                     inquirer
                         .prompt([
                             {
-                                name: "updateRole",
+                                name: "RoleOrManager",
                                 type: "list",
-                                choices: () => {
-                                    let choiceArray = [];
-
-                                    for (let i = 0; i < resultsRoles.length; i++) {
-                                        choiceArray.push(`ID:${resultsRoles[i].ID.toString().padStart(3, '0')}, Title:${resultsRoles[i].Title}, Salary:${resultsRoles[i].Salary}, Dept:${resultsRoles[i].Department}`);
-                                    }
-
-                                    return choiceArray;
-                                },
-                                message: "Which role would you like to attach to the employee instead?"
+                                choices: ["Employee Role", "Employee Manager"],
+                                message: "Select which one you want to update"
                             }
                         ])
-                        .then((gotProperty) => {
-                            const roleId = gotProperty.updateRole.substring(3, 6);
-                            const empid = gotEmp.updateEmp.substring(3, 6);
-                            connection.query(myqueries.updateEmployeeRole.update,
-                                [
-                                    roleId, empid
-                                ],
-                                (err, resultsUpdate) => {
-                                    if (err) throw err;
-                                    console.log("Successfully updated employee's role");
-                                    start();
-                                });
+                        .then(gotEmpOrMan => {
+                            switch (gotEmpOrMan.RoleOrManager) {
+                                case "Employee Role":
+                                    updateRole(gotEmp, resultsRoles);
+                                    break;
+                                case "Employee Manager":
+                                    updateManager(gotEmp, results);
+                                    break;
+                                default:
+                                    break;
+                            }
                         });
                 });
         });
     });
+}
+
+function updateRole(gotEmp, resultsRoles) {
+
+    inquirer
+        .prompt([
+            {
+                name: "updateRole",
+                type: "list",
+                choices: () => {
+                    let choiceArray = [];
+
+                    for (let i = 0; i < resultsRoles.length; i++) {
+                        choiceArray.push(`ID:${resultsRoles[i].ID.toString().padStart(3, '0')}, Title:${resultsRoles[i].Title}, Salary:${resultsRoles[i].Salary}, Dept:${resultsRoles[i].Department}`);
+                    }
+
+                    return choiceArray;
+                },
+                message: "Which role would you like to attach to the employee instead?"
+            }
+        ])
+        .then((gotProperty) => {
+            const roleId = gotProperty.updateRole.substring(3, 6);
+            const empid = gotEmp.updateEmp.substring(3, 6);
+            connection.query(myqueries.updateEmployeeRole.update,
+                [
+                    roleId, empid
+                ],
+                (err, resultsUpdate) => {
+                    if (err) throw err;
+                    console.log("Successfully updated employee's role");
+                    start();
+                });
+        });
+}
+
+function updateManager(gotEmp, listOfEmps) {
+    inquirer
+        .prompt([
+            {
+                name: "updateMan",
+                type: "rawlist",
+                choices: () => {
+                    const eligibleManagers = determineCircularManager(listOfEmps, gotEmp); //   utilityReturnEmpChoiceFilter(listOfEmps, gotEmp);
+                    let optionsEligibleManagers = [];
+                    optionsEligibleManagers.push("No options");
+                    for (let i = 0; i < eligibleManagers.length; i++){
+                        optionsEligibleManagers.push(returnEmployeeInStringFormat(eligibleManagers[i]));
+                    }
+
+                    if (optionsEligibleManagers.length < 2){
+                        console.log("There are no employees who can be this employee's manager. Press Enter.");
+                    }
+
+                    return optionsEligibleManagers;
+                },
+
+                message: "Choose the manager"
+            }
+        ])
+        .then((answer) => {
+            let params = [null, gotEmp.updateEmp.substring(3, 6)];
+
+            if (!answer.updateMan.includes("No options")) {
+                params[0] = answer.updateMan.substring(3, 6);
+            }
+            connection.query(myqueries.updateEmployeeManager.update, params, (err, updatedMan) => {
+                if (err) throw err;
+                console.log("success updating an employee's manager");
+                start();
+            })
+        })
+}
+
+function utilityReturnEmpChoice(results) {
+    let choiceArray = [];
+    results.forEach((element) => {
+        choiceArray.push(returnEmployeeInStringFormat(element)); //`ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name} ${element.Last_Name}, Title:${element.Title}, Salary:${element.Salary}, Department:${element.Department}, Manager ID:${element.Manager_Id !== null ? element.Manager_Id.toString().padStart(3, '0') : null}, Manager:${element.Manager_Name}`);
+    });
+
+    return choiceArray;
+}
+
+function utilityReturnEmpChoiceFilter(results, gotEmp) {
+    let choiceArray = [];
+    choiceArray = determineCircularManager(results, gotEmp);
+
+    return choiceArray;
+}
+
+function determineCircularManager(results, emp) {
+    managers = [];
+    let found = false;
+
+    const empid = emp.updateEmp.substring(3, 6);
+    const empint = parseInt(empid);
+
+    for (let i = 0; i < results.length; i++) {
+        const elem = results[i];
+        
+        const inelem = elem.Employee_ID; //
+        let manId = elem.Manager_Id; // 
+        if (empint === inelem || empint === manId) {
+            continue;
+        }
+
+        let useit = true;
+        while (empint !== manId && manId !== null) {
+            const foundelem = results.find(element => {
+
+                return element.Employee_ID === manId;
+            });
+
+            manId = foundelem.Manager_Id; // 
+
+            if (manId === empint) {
+                useit = false;
+                break;
+            }
+
+        }
+
+        if (useit) {
+            managers.push(elem);
+        }
+    }
+
+    return managers;
+}
+
+function getManagerID(gotman) {
+    const index = gotman.updateEmp.indexOf("Manager ID:");
+    const endindex = index + "Manager ID:".length; //11;
+    const manId = gotman.updateEmp.substring(endindex, endindex + 3);
+    return manId;
+}
+
+function returnEmployeeInStringFormat(element){
+    return `ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name} ${element.Last_Name}, Title:${element.Title}, Salary:${element.Salary}, Department:${element.Department}, Manager ID:${element.Manager_Id !== null ? element.Manager_Id.toString().padStart(3, '0') : null}, Manager:${element.Manager_Name}`;
 }

@@ -24,6 +24,7 @@ const thequeries = {
             rl.title AS 'Title', 
             rl.salary AS 'Salary', 
             dp.name AS 'Department',
+            emp2.id AS 'Manager_Id',
             CONCAT(emp2.first_name, " ", emp2.last_name) AS 'Manager_Name' 
             
             FROM employee emp
@@ -65,6 +66,13 @@ const thequeries = {
             SET emp.role_id = ?
             WHERE emp.id = ?
         `
+    },
+    updateEmployeeManager: {
+        update: `
+        UPDATE employee emp
+        SET emp.manager_id = ?
+        WHERE emp.id = ?
+    `
     }
 }
 
