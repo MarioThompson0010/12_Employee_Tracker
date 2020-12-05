@@ -111,12 +111,32 @@ const thequeries = {
         
 
                         
-            SELECT dep.id AS 'ID', dep.name AS 'Department_Name', sum(rl.salary) AS 'Total_Salary'
-            FROM role rl
-            LEFT JOIN department dep ON
-            rl.department_id = dep.id
-            GROUP BY dep.name
-            HAVING dep.id = ?
+            
+           SELECT salaryTbl.Department as 'Department', SUM(salaryTbl.Salary) AS 'SUM'
+           FROM 
+        
+            (SELECT emp.id AS 'Employee_ID',
+            emp.first_name AS 'First_Name', 
+            emp.last_name AS 'Last_Name', 
+            rl.title AS 'Title', 
+            rl.salary AS 'Salary', 
+            dp.id AS 'DeptId',
+            dp.name AS 'Department',
+            emp2.id AS 'Manager_Id',
+            CONCAT(emp2.first_name, " ", emp2.last_name) AS 'Manager_Name' 
+            
+            FROM employee emp
+            LEFT JOIN role rl ON
+            emp.role_id = rl.id
+            LEFT JOIN department dp ON
+            rl.department_id = dp.id
+            LEFT JOIN employee emp2 ON
+            emp.manager_id = emp2.id
+
+            ORDER BY emp.id) AS salaryTbl
+            
+            GROUP BY salaryTbl.DeptId
+            HAVING salaryTbl.DeptId = ?
 
         `
     },

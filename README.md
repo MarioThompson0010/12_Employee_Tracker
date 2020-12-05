@@ -1,9 +1,9 @@
 # 12_Employee_Tracker
 
 ## Link to app and Screenshots:
-[Link to Employee Tracker](https://hidden-hollows-43738.herokuapp.com/)
-![Screenshot 1](https://github.com/MarioThompson0010/11_Note_Taker/blob/main/screenshots/Home_Page.PNG)
-![Screenshot 1](https://github.com/MarioThompson0010/11_Note_Taker/blob/main/screenshots/Notes_Page.PNG)
+[Link to Employee Tracker](https://drive.google.com/file/d/1Uy4ZfJNKKrpVyVKnYXU5Vg-jzMOUlcBe/view?usp=sharing)
+![Screenshot 1](https://github.com/MarioThompson0010/12_Employee_Tracker/blob/main/Screenshots/Screenshot1.PNG)
+![Screenshot 2](https://github.com/MarioThompson0010/12_Employee_Tracker/blob/main/Screenshots/Screenshot2.PNG)
 
 List of technologies used: npm, inquirer, Javascript, Nodejs, Mysql
 
