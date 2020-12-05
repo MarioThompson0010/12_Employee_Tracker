@@ -55,9 +55,9 @@ function start() {
         });
 }
 
-//
+// add functionality
 function addToTable() {
-    inquirer
+    inquirer // which table do you want to add to?  See the choices
         .prompt([{
             name: "whichTableToAddTo",
             type: "list",

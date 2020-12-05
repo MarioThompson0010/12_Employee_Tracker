@@ -2,21 +2,25 @@ const thequeries = {
     addDepartment: {
 
         dept: `
-        USE employee_trackerdb;
         INSERT INTO department SET ?`
 
     },
     addRole: {
-        role: `INSERT INTO role SET ?`,
+        
+        role: `
+        INSERT INTO role SET ?`,
         getDeptCode: `SELECT * FROM department`
     },
     addEmp: {
-        role: `SELECT * FROM role`,
+        role: `
+        SELECT * FROM role`,
         manager: `
-        select *
-        from employee emp
+
+        SELECT *
+        FROM employee emp
         `,
-        insert: `INSERT INTO employee SET ?`
+        insert: `
+        INSERT INTO employee SET ?`
     },
     viewAllEmployees: {
         all: `
@@ -43,7 +47,7 @@ const thequeries = {
     },
     viewByManager : {
         all: `
-                        
+
                 SELECT emp.id AS 'Employee_ID',
                 emp.first_name AS 'First_Name', 
                 emp.last_name AS 'Last_Name', 
