@@ -1,6 +1,6 @@
 var mysql = require("mysql"); // we'll be using mysql
 var inquirer = require("inquirer"); // we use prompts 
-var myqueries = require('./sqlqueries'); // we'll be querying the database
+var myqueries = require('./sqlqueries'); // we'll be referring to a sibling file with all our queries
 var consoleOutputter = require("console.table"); // we'll prettify the output a bit
 
 // create the connection information for the sql database
