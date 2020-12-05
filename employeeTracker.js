@@ -1,10 +1,10 @@
-var mysql = require("mysql");
-var inquirer = require("inquirer");
-var myqueries = require('./sqlqueries'); //
-var consoleOutputter = require("console.table");
+var mysql = require("mysql"); // we'll be using mysql
+var inquirer = require("inquirer"); // we use prompts 
+var myqueries = require('./sqlqueries'); // we'll be querying the database
+var consoleOutputter = require("console.table"); // we'll prettify the output a bit
 
 // create the connection information for the sql database
-var connection = mysql.createConnection({
+var connection = mysql.createConnection({ 
     host: "localhost",
 
     // Your port; if not 3306
@@ -31,8 +31,8 @@ function start() {
         .prompt([{
             name: "actionToPerform",
             type: "list",
-            message: "What would you like to do--[ADD], [VIEW], or [UPDATE]--a table? Select EXIT to end",
-            choices: ["ADD", "VIEW", "UPDATE", "EXIT"]
+            message: "What would you like to do--[ADD], [VIEW], [UPDATE], or [DELETE]--a table? Select EXIT to end",
+            choices: ["ADD", "VIEW", "UPDATE", "DELETE", "EXIT"]
         }])
         .then((answer) => {
             switch (answer.actionToPerform) {
@@ -45,6 +45,9 @@ function start() {
                 case "UPDATE": // update
                     updateEmployee();
                     break;
+                case "DELETE":
+                    deleteEmployee();
+                    break;
                 default:
                     connection.end();
                     break;
@@ -52,6 +55,7 @@ function start() {
         });
 }
 
+//
 function addToTable() {
     inquirer
         .prompt([{
@@ -269,20 +273,170 @@ function viewDepartments() {
 }
 
 function viewRole() {
-    connection.query(myqueries.viewAllRoles.all, (err, results) => {
-        if (err) throw err;
-        const gotTable = consoleOutputter.getTable(results);
-        console.log(gotTable);
-        start();
-    });
+
+    inquirer
+        .prompt([
+            {
+                name: "whatToView",
+                type: "list",
+                choices: ["View all Roles", "View Sum"],
+                message: "[View all Roles] or [View Sum] of salaries of employees for a given department"
+            }
+        ])
+        .then(answer => {
+            switch (answer.whatToView) {
+                case "View all Roles":
+                    connection.query(myqueries.viewAllRoles.all, (err, results) => {
+                        if (err) throw err;
+                        const gotTable = consoleOutputter.getTable(results);
+                        console.log(gotTable);
+                        start();
+                    });
+                    break;
+                case "View Sum":
+                    connection.query(myqueries.viewAllDepts.all, (err, results) => {
+                        if (err) throw err;
+
+                        inquirer
+                            .prompt([
+                                {
+                                    name: "chooseDeptToGroupBy",
+                                    type: "list",
+                                    choices: () => {
+                                        deptOptions = [];
+
+                                        for (let i = 0; i < results.length; i++) {
+                                            deptOptions.push(`ID:${results[i].ID.toString().padStart(3, '0')}, ${results[i].Department}`)
+                                        }
+
+                                        if (deptOptions.length < 1) {
+                                            deptOptions.push("No departments available");
+                                        }
+
+                                        return deptOptions;
+                                    },
+                                    message: "Choose the department you want to group by"
+                                }
+                            ])
+                            .then(answer => {
+                                connection.query(myqueries.sumSalaries.salaries, [answer.chooseDeptToGroupBy.substring(3, 6)],
+                                    (err, results) => {
+                                        if (err) throw err;
+                                        const gotTable = consoleOutputter.getTable(results);
+                                        console.log(gotTable);
+                                        start();
+                                    });
+                            });
+                    });
+                    break;
+                default:
+                    break;
+            }
+        });
 }
 
 function viewEmployee() {
+
     connection.query(myqueries.viewAllEmployees.all, (err, results) => {
         if (err) throw err;
-        const gotTable = consoleOutputter.getTable(results);
-        console.log(gotTable);
-        start();
+
+        inquirer
+            .prompt([
+                {
+                    name: "viewByEmployeeOrManager",
+                    type: "list",
+                    message: "Do you want to [View All Employees] or [View Employees by Manager]?",
+                    choices: ["[View All Employees]", "[View Employees by Manager]"]
+                }
+            ])
+            .then(answer => {
+                switch (answer.viewByEmployeeOrManager) {
+                    case "[View All Employees]":
+                        const gotTable = consoleOutputter.getTable(results);
+                        console.log(gotTable);
+                        start();
+                        break;
+                    case "[View Employees by Manager]":
+                        inquirer
+                            .prompt([
+                                {
+                                    name: "viewByManager",
+                                    type: "list",
+                                    message: "Select a manager you want to search by.",
+                                    choices: () => {
+                                        arrayToDisplayEmps = [];
+
+                                        for (let i = 0; i < results.length; i++) {
+                                            if (results[i].Manager_Id !== null) {
+                                                const foundMan = results.find(element => element.Employee_ID === results[i].Manager_Id);
+                                                const foundString = arrayToDisplayEmps.find(element =>
+                                                    foundMan.Employee_ID.toString().padStart(3, '0') === element.substring(3, 6));
+
+                                                if (foundString === undefined || foundString === null) {
+                                                    arrayToDisplayEmps.push(returnEmployeeInStringFormat(foundMan));
+                                                }
+                                            }
+
+                                        }
+
+                                        if (arrayToDisplayEmps.length < 1) {
+                                            arrayToDisplayEmps.push("No managers found. Press Enter");
+                                        }
+
+                                        return arrayToDisplayEmps;
+                                    }
+                                }
+                            ])
+                            .then(answer => {
+                                if (answer.viewByManager.includes("No managers found")) {
+                                    start();
+                                }
+                                else {
+                                    const manid = answer.viewByManager.substring(3, 6);
+                                    connection.query(myqueries.viewByManager.all, [manid], (err, resultSet) => {
+                                        if (err) throw err;
+                                        const gotTable = consoleOutputter.getTable(resultSet);
+                                        console.log(gotTable);
+                                        start();
+                                    });
+                                }
+                            });
+                        break;
+                    default:
+                        break;
+                }
+            });
+    });
+}
+
+function deleteEmployee(){
+    connection.query(myqueries.viewAllEmployees.all, (err, results) => {
+        if (err) throw err;
+
+        inquirer.prompt([
+            {
+                name: "deleteEmp",
+                    type: "rawlist",
+                    choices: () => {
+                        arrayEmps = [];
+                        results.forEach(elem => {
+                            arrayEmps.push(returnEmployeeInStringFormat(elem));
+                        });
+
+                        return arrayEmps;
+                    },
+                    message: "Which employee would you like to delete?"
+            }
+            
+        ])
+        .then(answer => {
+            const empToDelete = answer.deleteEmp.substring(3, 6);
+            connection.query(myqueries.deleteEmployee.deleteIt, [empToDelete], (err, result) => {
+                if (err) throw err;
+                console.log("Deletion successful!");
+                start();
+            });
+        });
     });
 }
 
@@ -372,12 +526,12 @@ function updateManager(gotEmp, listOfEmps) {
                 choices: () => {
                     const eligibleManagers = determineCircularManager(listOfEmps, gotEmp); //   utilityReturnEmpChoiceFilter(listOfEmps, gotEmp);
                     let optionsEligibleManagers = [];
-                    optionsEligibleManagers.push("No options");
-                    for (let i = 0; i < eligibleManagers.length; i++){
+                    optionsEligibleManagers.push("No manager");
+                    for (let i = 0; i < eligibleManagers.length; i++) {
                         optionsEligibleManagers.push(returnEmployeeInStringFormat(eligibleManagers[i]));
                     }
 
-                    if (optionsEligibleManagers.length < 2){
+                    if (optionsEligibleManagers.length < 2) {
                         console.log("There are no employees who can be this employee's manager. Press Enter.");
                     }
 
@@ -390,7 +544,7 @@ function updateManager(gotEmp, listOfEmps) {
         .then((answer) => {
             let params = [null, gotEmp.updateEmp.substring(3, 6)];
 
-            if (!answer.updateMan.includes("No options")) {
+            if (!answer.updateMan.includes("No manager")) {
                 params[0] = answer.updateMan.substring(3, 6);
             }
             connection.query(myqueries.updateEmployeeManager.update, params, (err, updatedMan) => {
@@ -404,19 +558,13 @@ function updateManager(gotEmp, listOfEmps) {
 function utilityReturnEmpChoice(results) {
     let choiceArray = [];
     results.forEach((element) => {
-        choiceArray.push(returnEmployeeInStringFormat(element)); //`ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name} ${element.Last_Name}, Title:${element.Title}, Salary:${element.Salary}, Department:${element.Department}, Manager ID:${element.Manager_Id !== null ? element.Manager_Id.toString().padStart(3, '0') : null}, Manager:${element.Manager_Name}`);
+        choiceArray.push(returnEmployeeInStringFormat(element));
     });
 
     return choiceArray;
 }
 
-function utilityReturnEmpChoiceFilter(results, gotEmp) {
-    let choiceArray = [];
-    choiceArray = determineCircularManager(results, gotEmp);
-
-    return choiceArray;
-}
-
+// make sure user can't do something that doesn't make sense--you can't have employees as managers of each other.
 function determineCircularManager(results, emp) {
     managers = [];
     let found = false;
@@ -426,7 +574,7 @@ function determineCircularManager(results, emp) {
 
     for (let i = 0; i < results.length; i++) {
         const elem = results[i];
-        
+
         const inelem = elem.Employee_ID; //
         let manId = elem.Manager_Id; // 
         if (empint === inelem || empint === manId) {
@@ -458,12 +606,12 @@ function determineCircularManager(results, emp) {
 }
 
 function getManagerID(gotman) {
-    const index = gotman.updateEmp.indexOf("Manager ID:");
+    const index = gotman.indexOf("Manager ID:");
     const endindex = index + "Manager ID:".length; //11;
-    const manId = gotman.updateEmp.substring(endindex, endindex + 3);
+    const manId = gotman.substring(endindex, endindex + 3);
     return manId;
 }
 
-function returnEmployeeInStringFormat(element){
+function returnEmployeeInStringFormat(element) {
     return `ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name} ${element.Last_Name}, Title:${element.Title}, Salary:${element.Salary}, Department:${element.Department}, Manager ID:${element.Manager_Id !== null ? element.Manager_Id.toString().padStart(3, '0') : null}, Manager:${element.Manager_Name}`;
 }
