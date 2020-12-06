@@ -25,6 +25,7 @@ connection.connect(function (err) {
     start();
 });
 
+// main menu here: you perform minimum functions plus bonus options except deleting roles and departments.
 function start() {
 
     inquirer
@@ -46,7 +47,7 @@ function start() {
                     updateEmployee();
                     break;
                 case "DELETE":
-                    deleteEmployee();
+                    deleteEmployee(); // only delete employees for now
                     break;
                 default:
                     connection.end();
@@ -55,7 +56,7 @@ function start() {
         });
 }
 
-// add functionality
+// add records  to a table
 function addToTable() {
     inquirer // which table do you want to add to?  See the choices
         .prompt([{
@@ -64,7 +65,7 @@ function addToTable() {
             message: "Do you want to add a [DEPARTMENT], a [ROLE], or an [EMPLOYEE]?",
             choices: ["DEPARTMENT", "ROLE", "EMPLOYEE"]
         }])
-        .then((answer) => {
+        .then((answer) => { // which one did the user choose?
             switch (answer.whichTableToAddTo) {
                 case "DEPARTMENT":
                     userAddsDepartment();
@@ -81,6 +82,7 @@ function addToTable() {
         });
 }
 
+// user adds a department
 function userAddsDepartment() {
     inquirer
         .prompt([
@@ -106,18 +108,19 @@ function userAddsDepartment() {
         });
 }
 
+// user adds a role
 function userAddsRole() {
 
     connection.query(myqueries.addRole.getDeptCode, (err, results) => {
         if (err) throw err;
         inquirer
             .prompt([
-                {
+                {   // type the title
                     name: "userAddsRole",
                     type: "input",
                     message: "Type the title you would like to add, then press Enter."
                 },
-                {
+                {   // the salary
                     name: "userAddsSalary",
                     type: "input",
                     message: "Type the salary you would like to attach to this role, then press Enter.",
@@ -128,7 +131,7 @@ function userAddsRole() {
                         return false;
                     }
                 },
-                {
+                {   // which department should the role go into?
                     name: "userAddsDepartment",
                     type: "list",
                     choices: () => {
@@ -143,6 +146,7 @@ function userAddsRole() {
             ])
             .then((answer) => {
 
+                // which department did the user choose
                 const deptChosen = results.find(dept => dept.name === answer.userAddsDepartment);
                 connection.query(
                     myqueries.addRole.role,
@@ -162,6 +166,7 @@ function userAddsRole() {
     })
 }
 
+// add an employee
 function userAddsEmployee() {
 
     connection.query(myqueries.addEmp.role, (err, results) => {
@@ -236,6 +241,7 @@ function userAddsEmployee() {
     })
 }
 
+// view entire table complete with joins
 function viewTable() {
 
     inquirer
@@ -263,6 +269,7 @@ function viewTable() {
         });
 }
 
+// view departments
 function viewDepartments() {
     connection.query(myqueries.viewAllDepts.all, (err, results) => {
         if (err) throw err;
@@ -272,6 +279,7 @@ function viewDepartments() {
     });
 }
 
+// view roles; also view sum of salaries within a department.
 function viewRole() {
 
     inquirer
@@ -335,6 +343,7 @@ function viewRole() {
         });
 }
 
+// view all employees or view all employees under a selected manager.
 function viewEmployee() {
 
     connection.query(myqueries.viewAllEmployees.all, (err, results) => {
@@ -409,6 +418,7 @@ function viewEmployee() {
     });
 }
 
+// delete employee
 function deleteEmployee(){
     connection.query(myqueries.viewAllEmployees.all, (err, results) => {
         if (err) throw err;
@@ -440,6 +450,7 @@ function deleteEmployee(){
     });
 }
 
+// update employee
 function updateEmployee() {
 
     connection.query(myqueries.viewAllEmployees.all, (err, results) => {
@@ -483,6 +494,7 @@ function updateEmployee() {
     });
 }
 
+// update role
 function updateRole(gotEmp, resultsRoles) {
 
     inquirer
@@ -517,6 +529,7 @@ function updateRole(gotEmp, resultsRoles) {
         });
 }
 
+// update manager
 function updateManager(gotEmp, listOfEmps) {
     inquirer
         .prompt([
@@ -524,7 +537,7 @@ function updateManager(gotEmp, listOfEmps) {
                 name: "updateMan",
                 type: "rawlist",
                 choices: () => {
-                    const eligibleManagers = determineCircularManager(listOfEmps, gotEmp); //   utilityReturnEmpChoiceFilter(listOfEmps, gotEmp);
+                    const eligibleManagers = determineCircularManager(listOfEmps, gotEmp); 
                     let optionsEligibleManagers = [];
                     optionsEligibleManagers.push("No manager");
                     for (let i = 0; i < eligibleManagers.length; i++) {
@@ -555,6 +568,7 @@ function updateManager(gotEmp, listOfEmps) {
         })
 }
 
+// utility function (helper): return employees for user to choose from
 function utilityReturnEmpChoice(results) {
     let choiceArray = [];
     results.forEach((element) => {
@@ -569,28 +583,30 @@ function determineCircularManager(results, emp) {
     managers = [];
     let found = false;
 
-    const empid = emp.updateEmp.substring(3, 6);
+    const empid = emp.updateEmp.substring(3, 6); // get employee whose manager field you want to change
     const empint = parseInt(empid);
 
-    for (let i = 0; i < results.length; i++) {
-        const elem = results[i];
+    for (let i = 0; i < results.length; i++) { // go through all employees
+        const elem = results[i]; // get one employee
 
-        const inelem = elem.Employee_ID; //
-        let manId = elem.Manager_Id; // 
-        if (empint === inelem || empint === manId) {
+        const inelem = elem.Employee_ID; // get id
+        let manId = elem.Manager_Id; // get id of manager
+        if (empint === inelem || empint === manId) {  // is the selected employee same as the element's id? Is it the same as the element employee's manager? 
+            // can't make a manger of herself and can't manage someone who manages you.
             continue;
         }
 
-        let useit = true;
-        while (empint !== manId && manId !== null) {
+        let useit = true; // use it
+        // trace line of managers to see if we have a circular reference
+        while (empint !== manId && manId !== null) { 
+            // find manager in the list
             const foundelem = results.find(element => {
-
                 return element.Employee_ID === manId;
             });
 
-            manId = foundelem.Manager_Id; // 
+            manId = foundelem.Manager_Id; // find that employee's manager
 
-            if (manId === empint) {
+            if (manId === empint) { // can't be the manager of someone who manages you
                 useit = false;
                 break;
             }
@@ -605,6 +621,7 @@ function determineCircularManager(results, emp) {
     return managers;
 }
 
+// utility function: get manager id.
 function getManagerID(gotman) {
     const index = gotman.indexOf("Manager ID:");
     const endindex = index + "Manager ID:".length; //11;
@@ -612,6 +629,7 @@ function getManagerID(gotman) {
     return manId;
 }
 
+// utility function: return string-formatted version of an employee record 
 function returnEmployeeInStringFormat(element) {
     return `ID:${element.Employee_ID.toString().padStart(3, '0')} Name:${element.First_Name} ${element.Last_Name}, Title:${element.Title}, Salary:${element.Salary}, Department:${element.Department}, Manager ID:${element.Manager_Id !== null ? element.Manager_Id.toString().padStart(3, '0') : null}, Manager:${element.Manager_Name}`;
 }

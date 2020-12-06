@@ -1,7 +1,7 @@
 # 12_Employee_Tracker
 
 ## Link to video and Screenshots:
-[Video of Employee Tracker](https://drive.google.com/file/d/1Uy4ZfJNKKrpVyVKnYXU5Vg-jzMOUlcBe/view?usp=sharing)
+[Video of Employee Tracker](https://drive.google.com/file/d/1gQuUGL_2onv9lux4NmtJIGLdDEPiNrlb/view?usp=sharing)
 
 ![Screenshot 1](https://github.com/MarioThompson0010/12_Employee_Tracker/blob/main/Screenshots/Screenshot1.PNG)
 ![Screenshot 2](https://github.com/MarioThompson0010/12_Employee_Tracker/blob/main/Screenshots/Screenshot2.PNG)
